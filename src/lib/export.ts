@@ -1,7 +1,14 @@
 import type { Map } from 'maplibre-gl'
 import type { SizePreset } from '../types'
+import type { ActivityStats } from './stats'
+import { drawStatsOnCanvas } from './stats'
 
-export async function exportMapPng(map: Map, size: SizePreset, filename = 'nice-map.png'): Promise<void> {
+export async function exportMapPng(
+  map: Map,
+  size: SizePreset,
+  stats: ActivityStats | undefined,
+  filename = 'nice-map.png',
+): Promise<void> {
   await new Promise<void>((resolve) => {
     if (map.loaded()) resolve()
     else map.once('idle', () => resolve())
@@ -20,6 +27,10 @@ export async function exportMapPng(map: Map, size: SizePreset, filename = 'nice-
   const offsetY = (out.height - scaledH) / 2
 
   ctx.drawImage(canvas, offsetX, offsetY, scaledW, scaledH)
+
+  if (stats) {
+    drawStatsOnCanvas(ctx, stats, out.width, out.height)
+  }
 
   const dataUrl = out.toDataURL('image/png')
   const a = document.createElement('a')

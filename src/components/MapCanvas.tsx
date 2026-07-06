@@ -6,15 +6,17 @@ import type { MapStyle, MapSize } from '../types'
 import { STYLES, ROUTE_LAYER_CONFIG } from '../lib/styles'
 import { exportMapPng } from '../lib/export'
 import { SIZE_PRESETS } from '../lib/sizes'
+import type { ActivityStats } from '../lib/stats'
 
 interface Props {
   encodedPolyline: string
   mapStyle: MapStyle
   mapSize: MapSize
   activityName: string
+  stats?: ActivityStats
 }
 
-export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activityName }: Props) {
+export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activityName, stats }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -24,7 +26,6 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
 
     const coords = polyline.decode(encodedPolyline).map(([lat, lng]) => [lng, lat] as [number, number])
 
-    // Compute bounds
     const lngs = coords.map(([lng]) => lng)
     const lats = coords.map(([, lat]) => lat)
     const bounds: maplibregl.LngLatBoundsLike = [
@@ -43,89 +44,17 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
 
     mapRef.current = map
 
-    map.on('load', () => {
-      const geojson: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: coords },
-          properties: {},
-        }],
-      }
-
-      map.addSource('route', { type: 'geojson', data: geojson })
-
-      map.addLayer({
-        id: 'route-glow',
-        type: 'line',
-        source: 'route',
-        paint: ROUTE_LAYER_CONFIG.glow,
-      })
-      map.addLayer({
-        id: 'route-stroke',
-        type: 'line',
-        source: 'route',
-        paint: ROUTE_LAYER_CONFIG.stroke,
-      })
-      map.addLayer({
-        id: 'route-main',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-cap': ROUTE_LAYER_CONFIG.main['line-cap'],
-          'line-join': ROUTE_LAYER_CONFIG.main['line-join'],
-        },
-        paint: {
-          'line-color': ROUTE_LAYER_CONFIG.main['line-color'],
-          'line-width': ROUTE_LAYER_CONFIG.main['line-width'],
-          'line-opacity': ROUTE_LAYER_CONFIG.main['line-opacity'],
-        },
-      })
-    })
+    map.on('load', () => addRouteLayers(map, coords))
 
     return () => map.remove()
   }, [encodedPolyline])
 
-  // Update style without re-creating the map
   useEffect(() => {
     const map = mapRef.current
     if (!map || !map.loaded()) return
-
     const coords = polyline.decode(encodedPolyline).map(([lat, lng]) => [lng, lat] as [number, number])
-    const geojson: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: coords },
-        properties: {},
-      }],
-    }
-
     map.setStyle(STYLES[mapStyle])
-    map.once('styledata', () => {
-      if (!map.getSource('route')) {
-        map.addSource('route', { type: 'geojson', data: geojson })
-      }
-      if (!map.getLayer('route-glow')) {
-        map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: ROUTE_LAYER_CONFIG.glow })
-      }
-      if (!map.getLayer('route-stroke')) {
-        map.addLayer({ id: 'route-stroke', type: 'line', source: 'route', paint: ROUTE_LAYER_CONFIG.stroke })
-      }
-      if (!map.getLayer('route-main')) {
-        map.addLayer({
-          id: 'route-main',
-          type: 'line',
-          source: 'route',
-          layout: { 'line-cap': ROUTE_LAYER_CONFIG.main['line-cap'], 'line-join': ROUTE_LAYER_CONFIG.main['line-join'] },
-          paint: {
-            'line-color': ROUTE_LAYER_CONFIG.main['line-color'],
-            'line-width': ROUTE_LAYER_CONFIG.main['line-width'],
-            'line-opacity': ROUTE_LAYER_CONFIG.main['line-opacity'],
-          },
-        })
-      }
-    })
+    map.once('styledata', () => addRouteLayers(map, coords))
   }, [mapStyle])
 
   async function handleExport() {
@@ -134,7 +63,7 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
     setExporting(true)
     try {
       const slug = activityName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-      await exportMapPng(map, SIZE_PRESETS[mapSize], `${slug}-${mapStyle}-${mapSize}.png`)
+      await exportMapPng(map, SIZE_PRESETS[mapSize], stats, `${slug}-${mapStyle}-${mapSize}.png`)
     } finally {
       setExporting(false)
     }
@@ -171,4 +100,41 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
       </div>
     </div>
   )
+}
+
+function addRouteLayers(map: maplibregl.Map, coords: [number, number][]) {
+  const geojson: GeoJSON.FeatureCollection = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: coords },
+      properties: {},
+    }],
+  }
+
+  if (!map.getSource('route')) {
+    map.addSource('route', { type: 'geojson', data: geojson })
+  }
+  if (!map.getLayer('route-glow')) {
+    map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: ROUTE_LAYER_CONFIG.glow })
+  }
+  if (!map.getLayer('route-stroke')) {
+    map.addLayer({ id: 'route-stroke', type: 'line', source: 'route', paint: ROUTE_LAYER_CONFIG.stroke })
+  }
+  if (!map.getLayer('route-main')) {
+    map.addLayer({
+      id: 'route-main',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-cap': ROUTE_LAYER_CONFIG.main['line-cap'],
+        'line-join': ROUTE_LAYER_CONFIG.main['line-join'],
+      },
+      paint: {
+        'line-color': ROUTE_LAYER_CONFIG.main['line-color'],
+        'line-width': ROUTE_LAYER_CONFIG.main['line-width'],
+        'line-opacity': ROUTE_LAYER_CONFIG.main['line-opacity'],
+      },
+    })
+  }
 }
