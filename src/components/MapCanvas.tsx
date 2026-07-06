@@ -7,6 +7,8 @@ import { STYLES, ROUTE_LAYER_CONFIG } from '../lib/styles'
 import { exportMapPng } from '../lib/export'
 import { SIZE_PRESETS } from '../lib/sizes'
 import type { ActivityStats } from '../lib/stats'
+import { STATS_PANEL_RATIO } from '../lib/stats'
+import { BOTTOM_FADE_PX } from '../lib/export'
 
 interface Props {
   encodedPolyline: string
@@ -19,16 +21,24 @@ interface Props {
 export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activityName, stats }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const boundsRef = useRef<maplibregl.LngLatBoundsLike | null>(null)
   const [exporting, setExporting] = useState(false)
+
+  function fitRoute(map: maplibregl.Map) {
+    if (!boundsRef.current) return
+    const leftPad = stats
+      ? Math.round(map.getCanvas().offsetWidth * STATS_PANEL_RATIO) + 40
+      : 60
+    map.fitBounds(boundsRef.current, { padding: { top: 60, bottom: 60 + BOTTOM_FADE_PX, left: leftPad, right: 60 }, animate: false })
+  }
 
   useEffect(() => {
     if (!containerRef.current) return
 
     const coords = polyline.decode(encodedPolyline).map(([lat, lng]) => [lng, lat] as [number, number])
-
     const lngs = coords.map(([lng]) => lng)
     const lats = coords.map(([, lat]) => lat)
-    const bounds: maplibregl.LngLatBoundsLike = [
+    boundsRef.current = [
       [Math.min(...lngs), Math.min(...lats)],
       [Math.max(...lngs), Math.max(...lats)],
     ]
@@ -36,15 +46,18 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: STYLES[mapStyle],
-      bounds,
-      fitBoundsOptions: { padding: 80 },
+      center: [0, 0],
+      zoom: 1,
       attributionControl: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
     })
 
     mapRef.current = map
 
-    map.on('load', () => addRouteLayers(map, coords))
+    map.on('load', () => {
+      addRouteLayers(map, coords)
+      fitRoute(map)
+    })
 
     return () => map.remove()
   }, [encodedPolyline])
@@ -56,6 +69,14 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
     map.setStyle(STYLES[mapStyle])
     map.once('styledata', () => addRouteLayers(map, coords))
   }, [mapStyle])
+
+  // Re-fit whenever size or stats toggle changes
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.loaded()) return
+    map.resize()
+    fitRoute(map)
+  }, [mapSize, stats])
 
   async function handleExport() {
     const map = mapRef.current
