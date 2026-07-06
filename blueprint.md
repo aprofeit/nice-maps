@@ -1,0 +1,2 @@
+# Goal
+Near daily, I post an Instagram story for the run or ride I did for the day. I typically copy paste the Strava stats with transparent background and overlay them on top my video. I want to also have a nice map to add. I want to create a nice map of Strava activities to overlay on Instagram stories. The built in Strava maps aren't good enough. Ours will have a simple map serve as a semi transparent background with the activity route overlayed on top of it.  This image with transparency will be copy pasted into the Instagram app.
