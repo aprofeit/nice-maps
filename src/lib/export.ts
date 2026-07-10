@@ -29,14 +29,18 @@ export async function exportMapPng(
     drawStatsOnCanvas(ctx, stats, out.width, out.height)
   }
 
-  // Fade bottom edge to transparent
-  const grad = ctx.createLinearGradient(0, out.height - BOTTOM_FADE_PX, 0, out.height)
-  grad.addColorStop(0, 'rgba(0,0,0,0)')
-  grad.addColorStop(1, 'rgba(0,0,0,1)')
-  ctx.globalCompositeOperation = 'destination-out'
-  ctx.fillStyle = grad
-  ctx.fillRect(0, out.height - BOTTOM_FADE_PX, out.width, BOTTOM_FADE_PX)
-  ctx.globalCompositeOperation = 'source-over'
+  // Fade bottom edge to transparent via direct pixel manipulation
+  // (avoids destination-out composite which breaks alpha on iOS Safari)
+  const imageData = ctx.getImageData(0, out.height - BOTTOM_FADE_PX, out.width, BOTTOM_FADE_PX)
+  const { data } = imageData
+  for (let row = 0; row < BOTTOM_FADE_PX; row++) {
+    const alpha = 1 - row / (BOTTOM_FADE_PX - 1)
+    for (let col = 0; col < out.width; col++) {
+      const i = (row * out.width + col) * 4 + 3
+      data[i] = Math.round(data[i] * alpha)
+    }
+  }
+  ctx.putImageData(imageData, 0, out.height - BOTTOM_FADE_PX)
 
   const dataUrl = out.toDataURL('image/png')
   const a = document.createElement('a')
