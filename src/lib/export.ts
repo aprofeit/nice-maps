@@ -42,9 +42,21 @@ export async function exportMapPng(
   }
   ctx.putImageData(imageData, 0, out.height - BOTTOM_FADE_PX)
 
-  const dataUrl = out.toDataURL('image/png')
+  // On iOS, use the share sheet so the user can Save Image directly to Photos
+  if (navigator.share && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      out.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
+    )
+    try {
+      await navigator.share({ files: [new File([blob], filename, { type: 'image/png' })] })
+      return
+    } catch {
+      // user cancelled — fall through to download
+    }
+  }
+
   const a = document.createElement('a')
-  a.href = dataUrl
+  a.href = out.toDataURL('image/png')
   a.download = filename
   a.click()
 }
