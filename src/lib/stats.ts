@@ -92,7 +92,7 @@ export function drawStatsOnCanvas(
                + unitSize + Math.round(10 * scale)
                + 1 + Math.round(10 * scale)
                + secStatsH
-  let y = canvasHeight - pad - totalH
+  let y = canvasHeight - pad * 2 - totalH
 
   // Distance
   ctx.font = `bold ${distSize}px ${font}`

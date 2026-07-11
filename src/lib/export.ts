@@ -3,7 +3,7 @@ import type { SizePreset } from '../types'
 import type { ActivityStats } from './stats'
 import { drawStatsOnCanvas } from './stats'
 
-export const BOTTOM_FADE_PX = 20
+export const BOTTOM_FADE_PX = 40
 
 export async function exportMapPng(
   map: Map,
