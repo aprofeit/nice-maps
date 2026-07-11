@@ -23,7 +23,7 @@ export default function StatsOverlay({ stats }: Props) {
     }}>
       <div style={{
         width: `${STATS_PANEL_RATIO * 100}%`,
-        padding: '0 0 10% 10%',
+        padding: '0 0 10% 20%',
         display: 'flex',
         flexDirection: 'column',
       }}>
