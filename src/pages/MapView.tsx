@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import type { StravaActivity, MapStyle, MapSize } from '../types'
-import { SIZE_PRESETS } from '../lib/sizes'
+import type { StravaActivity, MapStyle } from '../types'
+import { WIDE } from '../lib/sizes'
 import { computeStats } from '../lib/stats'
 import MapCanvas from '../components/MapCanvas'
 import StylePicker from '../components/StylePicker'
-import SizePicker from '../components/SizePicker'
 import StatsOverlay from '../components/StatsOverlay'
 
 interface Props {
@@ -14,11 +13,9 @@ interface Props {
 
 export default function MapView({ activity, onBack }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>('ghost')
-  const [mapSize, setMapSize] = useState<MapSize>('wide')
   const [showStats, setShowStats] = useState(true)
 
-  const preset = SIZE_PRESETS[mapSize]
-  const aspectRatio = preset.width / preset.height
+  const aspectRatio = WIDE.width / WIDE.height
   const stats = computeStats(activity)
 
   return (
@@ -69,7 +66,6 @@ export default function MapView({ activity, onBack }: Props) {
       {/* Pickers */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 16, flexShrink: 0 }}>
         <StylePicker current={mapStyle} onChange={setMapStyle} />
-        <SizePicker current={mapSize} onChange={setMapSize} />
         <div style={{
           display: 'flex',
           gap: 8,
@@ -130,7 +126,6 @@ export default function MapView({ activity, onBack }: Props) {
           <MapCanvas
             encodedPolyline={activity.map.summary_polyline}
             mapStyle={mapStyle}
-            mapSize={mapSize}
             activityName={activity.name}
             stats={showStats ? stats : undefined}
           />

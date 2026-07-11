@@ -24,8 +24,6 @@ export interface StravaDetailedActivity extends StravaActivity {
 
 export type MapStyle = 'ghost' | 'terrain' | 'blueprint'
 
-export type MapSize = 'banner' | 'wide' | 'half' | 'square'
-
 export interface SizePreset {
   label: string
   width: number

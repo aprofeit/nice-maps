@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import polyline from '@mapbox/polyline'
-import type { MapStyle, MapSize } from '../types'
+import type { MapStyle } from '../types'
 import { STYLES, ROUTE_LAYER_CONFIG } from '../lib/styles'
 import { exportMapPng } from '../lib/export'
-import { SIZE_PRESETS } from '../lib/sizes'
+import { WIDE } from '../lib/sizes'
 import type { ActivityStats } from '../lib/stats'
 import { STATS_PANEL_RATIO } from '../lib/stats'
 import { BOTTOM_FADE_PX } from '../lib/export'
@@ -13,12 +13,11 @@ import { BOTTOM_FADE_PX } from '../lib/export'
 interface Props {
   encodedPolyline: string
   mapStyle: MapStyle
-  mapSize: MapSize
   activityName: string
   stats?: ActivityStats
 }
 
-export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activityName, stats }: Props) {
+export default function MapCanvas({ encodedPolyline, mapStyle, activityName, stats }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const boundsRef = useRef<maplibregl.LngLatBoundsLike | null>(null)
@@ -70,13 +69,12 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
     map.once('styledata', () => addRouteLayers(map, coords))
   }, [mapStyle])
 
-  // Re-fit whenever size or stats toggle changes
+  // Re-fit when stats toggle changes (affects left padding)
   useEffect(() => {
     const map = mapRef.current
     if (!map || !map.loaded()) return
-    map.resize()
     fitRoute(map)
-  }, [mapSize, stats])
+  }, [stats])
 
   async function handleExport() {
     const map = mapRef.current
@@ -84,7 +82,7 @@ export default function MapCanvas({ encodedPolyline, mapStyle, mapSize, activity
     setExporting(true)
     try {
       const slug = activityName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-      await exportMapPng(map, SIZE_PRESETS[mapSize], stats, `${slug}-${mapStyle}-${mapSize}.png`)
+      await exportMapPng(map, WIDE, stats, `${slug}-${mapStyle}.png`)
     } finally {
       setExporting(false)
     }
