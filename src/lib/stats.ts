@@ -67,7 +67,7 @@ export function drawStatsOnCanvas(
 ): void {
   const scale = canvasWidth / 1080
   const panelW = Math.round(canvasWidth * STATS_PANEL_RATIO)
-  const pad = Math.round(18 * scale)
+  const pad = Math.round(36 * scale)
   const x = pad
 
   const secStats = [
@@ -86,7 +86,7 @@ export function drawStatsOnCanvas(
   const font = `-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif`
 
   // Start from top-left with a fixed top padding
-  let y = Math.round(24 * scale)
+  let y = Math.round(72 * scale)
 
   // Distance
   ctx.font = `bold ${distSize}px ${font}`
