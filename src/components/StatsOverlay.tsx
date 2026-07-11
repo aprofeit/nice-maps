@@ -18,10 +18,12 @@ export default function StatsOverlay({ stats }: Props) {
       position: 'absolute',
       inset: 0,
       pointerEvents: 'none',
+      display: 'flex',
+      alignItems: 'flex-end',
     }}>
       <div style={{
         width: `${STATS_PANEL_RATIO * 100}%`,
-        padding: '30% 0 0 10%',
+        padding: '0 0 10% 10%',
         display: 'flex',
         flexDirection: 'column',
       }}>

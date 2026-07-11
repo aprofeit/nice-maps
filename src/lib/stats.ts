@@ -85,8 +85,14 @@ export function drawStatsOnCanvas(
 
   const font = `-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif`
 
-  // Start from top-left with a fixed top padding
-  let y = Math.round(canvasWidth * STATS_PANEL_RATIO * 0.30)
+  // Anchor block to bottom-left: pre-calculate total height
+  const secStatsH = secStats.length * (labelSize + Math.round(4 * scale) + valueSize)
+                  + (secStats.length - 1) * secGap
+  const totalH = distSize + Math.round(4 * scale)
+               + unitSize + Math.round(10 * scale)
+               + 1 + Math.round(10 * scale)
+               + secStatsH
+  let y = canvasHeight - pad - totalH
 
   // Distance
   ctx.font = `bold ${distSize}px ${font}`
